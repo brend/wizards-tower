@@ -18,13 +18,13 @@ export function gameRender(scope) {
 
     // A temporary demo: the square moves using time accumulated in update().
     const size = 24;
-    const x = (width - size) / 2 + Math.sin(scope.state.elapsed) * width / 3;
+    const x = (width - size) / 2 + (Math.sin(scope.state.elapsed) * width) / 3;
     context.fillStyle = "#40d870";
     context.fillRect(x, (height - size) / 2, size, size);
 
     for (const entity of Object.values(scope.state.entities)) {
       context.save();
-      entity.render();
+      entity.render(context);
       context.restore();
     }
   };
