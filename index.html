@@ -4,9 +4,23 @@
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title>Wizard's Tower</title>
+    <style>
+      body {
+        margin: 0;
+        min-height: 100vh;
+        display: grid;
+        place-items: center;
+        background: #0b1020;
+      }
+      canvas {
+        display: block;
+        max-width: 100%;
+        height: auto !important;
+      }
+    </style>
   </head>
   <body>
-    <div id="container" />
-    <script type="module" src="js/game.js" />
+    <div id="container"></div>
+    <script type="module" src="js/game.js"></script>
   </body>
 </html>

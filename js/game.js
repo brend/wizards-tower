@@ -1,20 +1,22 @@
-var container = document.getElementById("container");
+import { generateCanvas } from "./utils/utils.canvas.js";
+import { gameLoop } from "./core/game.loop.js";
+import { gameUpdate } from "./core/game.update.js";
+import { gameRender } from "./core/game.render.js";
 
-function Game() {
-  this.viewport = document.createElement("canvas");
+function Game(width, height, showFps = true) {
+  this.constants = { width, height, showFps };
+  this.state = { elapsed: 0, entities: {} };
+
+  this.viewport = generateCanvas(width, height);
+  this.viewport.id = "gameViewport";
+  this.viewport.setAttribute("aria-label", "Wizard's Tower: animated game loop demo");
   this.context = this.viewport.getContext("2d");
+  document.getElementById("container").appendChild(this.viewport);
 
-  this.viewport.width = 800;
-  this.viewport.height = 600;
-
-  container.insertBefore(this.viewport, container.firstChild);
-
-  this.context.font = "32px Helvetica";
-  this.context.fillText("It's dangerous to go alone.", 5, 50, 800);
-
-  return this;
+  this.update = gameUpdate(this);
+  this.render = gameRender(this);
+  this.loop = gameLoop(this);
+  this.loop.start();
 }
 
-window.game = new Game();
-
-module.exports = game;
+window.game = new Game(800, 600);
