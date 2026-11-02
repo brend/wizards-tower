@@ -1,5 +1,9 @@
+import { loadImage } from "./game.assets.js";
+
 export class Entity {
-  constructor(spritesheet, frameCount) {
+  constructor(spritesheet, frameCount = 1) {
+    if (frameCount < 1) throw new Error("frame count must be positive");
+
     this.frameCount = frameCount;
     this.x = 0;
     this.y = 0;
@@ -9,14 +13,15 @@ export class Entity {
     const animationFps = 7;
     this.frameDuration = 1.0 / animationFps;
 
-    this.image = new Image();
-    this.image.onload = () => {
-      this.ready = true;
-    };
-    this.image.onerror = () => {
-      console.error(`Failed to load image ${spritesheet}`);
-    };
-    this.image.src = spritesheet;
+    this.image = null;
+    this.ready = false;
+
+    loadImage(spritesheet)
+      .then((image) => {
+        this.image = image;
+        this.ready = true;
+      })
+      .catch((error) => console.error(error));
   }
 
   get width() {
@@ -61,5 +66,14 @@ export class Entity {
       this.frameTime -= this.frameDuration;
       this.frame = (this.frame + 1) % this.frameCount;
     }
+  }
+}
+
+export class StaticObject extends Entity {
+  update() {}
+
+  render(context) {
+    if (!this.ready) return;
+    context.drawImage(this.image, this.x, this.y);
   }
 }

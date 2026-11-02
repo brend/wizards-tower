@@ -2,7 +2,7 @@ import { generateCanvas } from "./utils/utils.canvas.js";
 import { gameLoop } from "./core/game.loop.js";
 import { gameUpdate } from "./core/game.update.js";
 import { gameRender } from "./core/game.render.js";
-import { Entity } from "./core/game.entity.js";
+import { Entity, StaticObject } from "./core/game.entity.js";
 
 class Game {
   constructor(width, height, showFps = true) {
@@ -25,7 +25,7 @@ class Game {
 
   initialize() {
     const state = this.state;
-    const tower = new Entity("assets/Tower.png", 1);
+    const tower = new Entity("assets/Tower.png");
     const wizard = new Entity("assets/Wizard.png", 4);
     const ork = new Entity("assets/Ork.png", 2);
 
@@ -40,6 +40,22 @@ class Game {
     ork.speed = 0.5;
 
     state.entities = [wizard, ork, tower];
+
+    for (let i = 0; i < 80; ++i) {
+      const grass = new StaticObject("assets/Ground-1.png");
+      grass.x = 200 + 16 * i;
+      grass.y = 314;
+      state.entities.push(grass);
+    }
+
+    for (let j = 0; j < 10; ++j) {
+      for (let i = 0; i < 80; ++i) {
+        const soil = new StaticObject("assets/Ground-2.png");
+        soil.x = 200 + 16 * i;
+        soil.y = 314 + 16 * (j + 1);
+        state.entities.push(soil);
+      }
+    }
   }
 }
 
