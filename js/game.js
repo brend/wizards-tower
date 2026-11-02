@@ -11,10 +11,7 @@ class Game {
 
     this.viewport = generateCanvas(width, height);
     this.viewport.id = "gameViewport";
-    this.viewport.setAttribute(
-      "aria-label",
-      "Wizard's Tower: animated game loop demo",
-    );
+    this.viewport.setAttribute("aria-label", "Wizard's Tower");
     this.context = this.viewport.getContext("2d");
     document.getElementById("container").appendChild(this.viewport);
 
@@ -30,6 +27,7 @@ class Game {
     const state = this.state;
     const tower = new Entity("assets/Tower.png", 1);
     const wizard = new Entity("assets/Wizard.png", 4);
+    const ork = new Entity("assets/Ork.png", 2);
 
     tower.x = (800 - 32) /*tower.width*/ / 2;
     tower.y = (600 - 128) /*tower.height*/ / 2;
@@ -37,7 +35,11 @@ class Game {
     wizard.x = tower.x + 8;
     wizard.y = tower.y + 8;
 
-    state.entities = [wizard, tower];
+    ork.x = 300;
+    ork.y = 300;
+    ork.speed = 0.5;
+
+    state.entities = [wizard, ork, tower];
   }
 }
 

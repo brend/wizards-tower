@@ -12,10 +12,21 @@ export function gameRender(scope) {
       context.fillText(`${scope.loop.fps} FPS`, width - 100, 45);
     }
 
+    const zoom = 3;
+
+    context.save();
+
+    // Zoom around the center of the scene.
+    context.translate(width / 2, height / 2);
+    context.scale(zoom, zoom);
+    context.translate(-width / 2, -height / 2);
+
     for (const entity of Object.values(scope.state.entities)) {
       context.save();
       entity.render(context);
       context.restore();
     }
+
+    context.restore();
   };
 }

@@ -51,6 +51,10 @@ export class Entity {
   }
 
   update(dt) {
+    if (this.speed) {
+      this.x += this.speed;
+    }
+
     this.frameTime += dt;
 
     while (this.frameTime >= this.frameDuration) {
