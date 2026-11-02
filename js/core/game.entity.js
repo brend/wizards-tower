@@ -1,8 +1,8 @@
 export class Entity {
   constructor(spritesheet, frameCount) {
     this.frameCount = frameCount;
-    this.x = 100;
-    this.y = 100;
+    this.x = 0;
+    this.y = 0;
     this.ready = false;
     this.frame = 0;
     this.frameTime = 0;
@@ -17,6 +17,16 @@ export class Entity {
       console.error(`Failed to load image ${spritesheet}`);
     };
     this.image.src = spritesheet;
+  }
+
+  get width() {
+    if (!this.ready) return NaN;
+    return this.image.width;
+  }
+
+  get height() {
+    if (!this.ready) return NaN;
+    return this.image.height;
   }
 
   render(context) {

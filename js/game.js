@@ -31,8 +31,11 @@ class Game {
     const tower = new Entity("assets/Tower.png", 1);
     const wizard = new Entity("assets/Wizard.png", 4);
 
-    wizard.x = 108;
-    wizard.y = 108;
+    tower.x = (800 - 32) /*tower.width*/ / 2;
+    tower.y = (600 - 128) /*tower.height*/ / 2;
+
+    wizard.x = tower.x + 8;
+    wizard.y = tower.y + 8;
 
     state.entities = [wizard, tower];
   }
