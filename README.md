@@ -1,5 +1,7 @@
 # Wizard's Tower
 
+<img src="assets/screenshot.jpg">
+
 A small canvas game loop with native JavaScript modules. No build step or npm dependencies.
 
 ## Run locally
