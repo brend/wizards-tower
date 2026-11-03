@@ -132,10 +132,17 @@ class Game {
       this.processEvent(e);
     }
 
+    const completed = [];
     for (const animation of this.state.animations) {
       animation.update(dt);
+      if (animation.done) {
+        completed.push(animation);
+      }
     }
     state.animations = state.animations.filter((a) => !a.done);
+    for (const animation of completed) {
+      animation.onComplete?.();
+    }
   }
 
   render() {
@@ -177,6 +184,10 @@ class Game {
     this.state.entities.push(entity);
   }
 
+  removeEntity(entity) {
+    this.state.entities = this.state.entities.filter((e) => e !== entity);
+  }
+
   addAnimation(animation) {
     this.state.animations.push(animation);
   }
@@ -188,11 +199,13 @@ class Game {
         this.state.tower.y += e.strength * 8;
         this.state.wizard.y += e.strength * 8;
 
-        const effect = new StaticObject("assets/Ork.png");
-        effect.x = 400;
-        effect.y = 250;
+        const effect = new StaticObject("assets/Ouch.png");
+        effect.x = 400 - 20;
+        effect.y = 284;
         this.addEntity(effect);
-        this.addAnimation(new LinearAnimation(effect, 20, -30, 2.0));
+        const animation = new LinearAnimation(effect, -8, -64, 2.0);
+        animation.onComplete = () => this.removeEntity(effect);
+        this.addAnimation(animation);
     }
   }
 }
