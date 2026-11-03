@@ -2,7 +2,7 @@ import { generateCanvas } from "./utils/utils.canvas.js";
 import { gameLoop } from "./core/game.loop.js";
 import { gameUpdate } from "./core/game.update.js";
 import { gameRender } from "./core/game.render.js";
-import { Entity, StaticObject } from "./core/game.entity.js";
+import { Entity, StaticObject, Ork } from "./core/game.entity.js";
 
 class Game {
   constructor(width, height, showFps = true) {
@@ -27,9 +27,12 @@ class Game {
 
   initialize() {
     const state = this.state;
+
+    state.events = [];
+
     const tower = new Entity("assets/Tower.png");
     const wizard = new Entity("assets/Wizard.png", 4);
-    const ork = new Entity("assets/Ork.png", 2);
+    const ork = new Ork("assets/Ork.png", 2);
 
     tower.x = (800 - 32) /*tower.width*/ / 2;
     tower.y = (600 - 128) /*tower.height*/ / 2;
@@ -41,7 +44,7 @@ class Game {
     ork.y = 300;
     ork.speed = 0.5;
 
-    state.entities = [wizard, ork, tower];
+    state.entities = [wizard, tower, ork];
 
     for (let i = 0; i < 80; ++i) {
       const grass = new StaticObject("assets/Ground-1.png");
@@ -68,6 +71,10 @@ class Game {
     document.getElementById("resume-button").addEventListener("click", () => {
       this.loop.start();
     });
+  }
+
+  emitEvent(e) {
+    this.state.events.push(e);
   }
 }
 

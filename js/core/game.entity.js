@@ -1,4 +1,5 @@
 import { loadImage } from "./game.assets.js";
+import { attackTower } from "./game.events.js";
 
 export class Entity {
   constructor(spritesheet, frameCount = 1) {
@@ -55,7 +56,7 @@ export class Entity {
     );
   }
 
-  update(dt) {
+  update(dt, _emit) {
     if (this.speed) {
       this.x += this.speed;
     }
@@ -75,5 +76,43 @@ export class StaticObject extends Entity {
   render(context) {
     if (!this.ready) return;
     context.drawImage(this.image, this.x, this.y);
+  }
+}
+
+export class Ork extends Entity {
+  constructor(spritesheet, frameCount = 1) {
+    super(spritesheet, frameCount);
+    this.attackInterval = 1.0;
+    this.attackStrength = 1.0;
+    this.timeSinceLastAttack = 0.0;
+  }
+
+  update(dt, emit) {
+    super.update(dt);
+
+    if (this.hasArrived()) {
+      if (this.speed) {
+        this.stopAdvance();
+        this.timeSinceLastAttack = 0;
+      }
+
+      this.timeSinceLastAttack += dt;
+      while (this.timeSinceLastAttack >= this.attackInterval) {
+        this.attack(emit);
+        this.timeSinceLastAttack -= this.attackInterval;
+      }
+    }
+  }
+
+  hasArrived() {
+    return this.x >= 400 - 24;
+  }
+
+  stopAdvance() {
+    this.speed = undefined;
+  }
+
+  attack(emit) {
+    emit(attackTower(this.attackStrength));
   }
 }

@@ -1,10 +1,18 @@
 export function gameUpdate(scope) {
   return function update(dt) {
-    // dt is seconds, so animation speed does not depend on refresh rate.
-    scope.state.elapsed += dt;
+    const state = scope.state;
 
-    for (const entity of Object.values(scope.state.entities)) {
-      entity.update(dt);
+    // dt is seconds, so animation speed does not depend on refresh rate.
+    state.elapsed += dt;
+
+    for (const entity of Object.values(state.entities)) {
+      entity.update(dt, (event) => scope.emitEvent(event));
+    }
+
+    let e = state.events.shift();
+    while (e) {
+      console.log("Oh look:", e);
+      e = state.events.shift();
     }
   };
 }
