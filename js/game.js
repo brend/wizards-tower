@@ -1,5 +1,6 @@
 import { generateCanvas } from "./utils/utils.canvas.js";
-import { Entity, StaticObject, Ork } from "./core/game.entity.js";
+import { Entity, StaticObject, Ork } from "./core/entity.js";
+import { LinearAnimation } from "./core/animation.js";
 
 class Game {
   constructor(width, height, showFps = true) {
@@ -30,6 +31,7 @@ class Game {
     const state = this.state;
 
     state.events = [];
+    state.animations = [];
 
     const tower = new Entity("assets/Tower.png");
     const wizard = new Entity("assets/Wizard.png", 4);
@@ -37,6 +39,7 @@ class Game {
 
     tower.x = (800 - 32) /*tower.width*/ / 2;
     tower.y = (600 - 128) /*tower.height*/ / 2;
+    tower.hp = 10;
 
     wizard.x = tower.x + 8;
     wizard.y = tower.y + 8;
@@ -46,6 +49,8 @@ class Game {
     ork.speed = 0.5;
 
     state.entities = [wizard, tower, ork];
+    state.wizard = wizard;
+    state.tower = tower;
 
     for (let i = 0; i < 80; ++i) {
       const grass = new StaticObject("assets/Ground-1.png");
@@ -93,9 +98,8 @@ class Game {
   frame(timestamp) {
     // Queue first so stop() can cancel the next frame even during an update.
     this.frameId = window.requestAnimationFrame(this.frame);
-    const seconds = this.previousTime === null
-      ? 0
-      : (timestamp - this.previousTime) / 1000;
+    const seconds =
+      this.previousTime === null ? 0 : (timestamp - this.previousTime) / 1000;
     this.previousTime = timestamp;
 
     if (seconds > 0) {
@@ -123,11 +127,15 @@ class Game {
       entity.update(dt, (event) => this.emitEvent(event));
     }
 
-    let e = state.events.shift();
-    while (e) {
-      console.log("Oh look:", e);
-      e = state.events.shift();
+    while (state.events.length > 0) {
+      const e = state.events.shift();
+      this.processEvent(e);
     }
+
+    for (const animation of this.state.animations) {
+      animation.update(dt);
+    }
+    state.animations = state.animations.filter((a) => !a.done);
   }
 
   render() {
@@ -163,6 +171,29 @@ class Game {
 
   emitEvent(e) {
     this.state.events.push(e);
+  }
+
+  addEntity(entity) {
+    this.state.entities.push(entity);
+  }
+
+  addAnimation(animation) {
+    this.state.animations.push(animation);
+  }
+
+  processEvent(e) {
+    switch (e?.type) {
+      case "attackTower":
+        this.state.tower.hp -= e.strength;
+        this.state.tower.y += e.strength * 8;
+        this.state.wizard.y += e.strength * 8;
+
+        const effect = new StaticObject("assets/Ork.png");
+        effect.x = 400;
+        effect.y = 250;
+        this.addEntity(effect);
+        this.addAnimation(new LinearAnimation(effect, 20, -30, 2.0));
+    }
   }
 }
 
