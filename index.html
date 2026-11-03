@@ -3,6 +3,7 @@
   <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <link rel="stylesheet" href="style.css" />
     <title>Wizard's Tower</title>
     <style>
       body {
@@ -20,7 +21,12 @@
     </style>
   </head>
   <body>
-    <div id="container"></div>
+    <div id="container">
+      <div class="controls">
+        <button id="pause-button" type="button">Pause</button>
+        <button id="resume-button" type="button">Resume</button>
+      </div>
+    </div>
     <script type="module" src="js/game.js"></script>
   </body>
 </html>

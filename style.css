@@ -1,0 +1,27 @@
+#container {
+  position: relative;
+}
+
+.controls {
+  position: absolute;
+  top: 400px;
+  left: 16px;
+  z-index: 1;
+
+  display: flex;
+  gap: 8px;
+}
+
+button {
+  border: none;
+  border-radius: 8px;
+  color: white;
+  background-color: brown;
+  padding: 8px;
+  text-align: center;
+  text-decoration: none;
+  display: inline-block;
+  font-size: 16px;
+  margin: 4px 2px;
+  cursor: pointer;
+}

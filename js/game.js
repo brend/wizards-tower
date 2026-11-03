@@ -21,6 +21,8 @@ class Game {
     this.render = gameRender(this);
     this.loop = gameLoop(this);
     this.loop.start();
+
+    this.hookupControls();
   }
 
   initialize() {
@@ -56,6 +58,16 @@ class Game {
         state.entities.push(soil);
       }
     }
+  }
+
+  hookupControls() {
+    document.getElementById("pause-button").addEventListener("click", () => {
+      this.loop.stop();
+    });
+
+    document.getElementById("resume-button").addEventListener("click", () => {
+      this.loop.start();
+    });
   }
 }
 
