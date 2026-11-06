@@ -1,5 +1,5 @@
 import { generateCanvas } from "./utils/utils.canvas.js";
-import { Entity, StaticObject, Ork } from "./core/entity.js";
+import { Entity, Ork } from "./core/entity.js";
 import { LinearAnimation } from "./core/animation.js";
 import { VoicePlayer } from "./core/voice.js";
 
@@ -43,6 +43,7 @@ class Game {
     state.events = [];
     state.animations = [];
     state.spawnTimer = 3.0;
+    state.spellSpawnTimer = 5.0;
     state.spawnCount = 0;
 
     const tower = new Entity("assets/Tower.png");
@@ -60,7 +61,7 @@ class Game {
     state.tower = tower;
 
     for (let i = 0; i < 80; ++i) {
-      const grass = new StaticObject("assets/Ground-1.png");
+      const grass = new Entity("assets/Ground-1.png");
       grass.x = 200 + 16 * i;
       grass.y = 314;
       state.entities.push(grass);
@@ -68,7 +69,7 @@ class Game {
 
     for (let j = 0; j < 10; ++j) {
       for (let i = 0; i < 80; ++i) {
-        const soil = new StaticObject("assets/Ground-2.png");
+        const soil = new Entity("assets/Ground-2.png");
         soil.x = 200 + 16 * i;
         soil.y = 314 + 16 * (j + 1);
         state.entities.push(soil);
@@ -165,6 +166,12 @@ class Game {
       state.spawnTimer += 3.0;
     }
 
+    state.spellSpawnTimer -= dt;
+    while (state.spellSpawnTimer <= 0) {
+      this.spawnFireball(state);
+      state.spellSpawnTimer += 5.0;
+    }
+
     for (const entity of Object.values(state.entities)) {
       entity.update(dt, (event) => this.emitEvent(event));
     }
@@ -186,7 +193,6 @@ class Game {
       animation.onComplete?.();
     }
 
-    console.log(originalTowerY);
     if (originalTowerY < 300 && state.tower.y >= 300) {
       this.playVoice("itsover");
     }
@@ -246,7 +252,7 @@ class Game {
         this.state.tower.y += e.strength * 8;
         this.state.wizard.y += e.strength * 8;
 
-        const effect = new StaticObject("assets/Ouch.png");
+        const effect = new Entity("assets/Ouch.png");
         effect.x = 400 - 20;
         effect.y = 284;
         this.addEntity(effect);
@@ -260,7 +266,7 @@ class Game {
     const ork = new Ork("assets/Ork.png", 2);
     ork.x = 200;
     ork.y = 300;
-    ork.speed = 0.5;
+    ork.vx = 0.5;
     ork.targetX = 400 - 24 + 8 * Math.random() - 4;
     state.entities.push(ork);
 
@@ -269,6 +275,17 @@ class Game {
     }
 
     state.spawnCount += 1;
+  }
+
+  spawnFireball(state) {
+    const fireball = new Entity("assets/Fireball.png");
+    fireball.x = 400;
+    fireball.y = 200;
+    state.entities.push(fireball);
+    this.playVoice("spell");
+    const animation = new LinearAnimation(fireball, -100, 108, 1.0);
+    animation.onComplete = () => this.removeEntity(fireball);
+    this.addAnimation(animation);
   }
 
   playVoice(name) {

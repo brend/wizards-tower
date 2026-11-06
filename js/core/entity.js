@@ -8,6 +8,8 @@ export class Entity {
     this.frameCount = frameCount;
     this.x = 0;
     this.y = 0;
+    this.vx = 0;
+    this.vy = 0;
     this.ready = false;
     this.frame = 0;
     this.frameTime = 0;
@@ -57,25 +59,14 @@ export class Entity {
   }
 
   update(dt, _emit) {
-    if (this.speed) {
-      this.x += this.speed;
-    }
-
+    this.x += this.vx;
+    this.y += this.vy;
     this.frameTime += dt;
 
     while (this.frameTime >= this.frameDuration) {
       this.frameTime -= this.frameDuration;
       this.frame = (this.frame + 1) % this.frameCount;
     }
-  }
-}
-
-export class StaticObject extends Entity {
-  update() {}
-
-  render(context) {
-    if (!this.ready) return;
-    context.drawImage(this.image, this.x, this.y);
   }
 }
 
@@ -91,7 +82,7 @@ export class Ork extends Entity {
     super.update(dt);
 
     if (this.hasArrived()) {
-      if (this.speed) {
+      if (this.vx) {
         this.stopAdvance();
         this.timeSinceLastAttack = 0;
       }
@@ -109,7 +100,7 @@ export class Ork extends Entity {
   }
 
   stopAdvance() {
-    this.speed = undefined;
+    this.vx = 0;
   }
 
   attack(emit) {
