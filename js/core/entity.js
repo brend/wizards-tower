@@ -1,5 +1,5 @@
-import { loadImage } from "./game.assets.js";
-import { attackTower } from "./game.events.js";
+import { loadImage } from "./assets.js";
+import { attackTower } from "./events.js";
 
 export class Entity {
   constructor(spritesheet, frameCount = 1) {
@@ -105,7 +105,7 @@ export class Ork extends Entity {
   }
 
   hasArrived() {
-    return this.x >= 400 - 24;
+    return this.x >= this.targetX;
   }
 
   stopAdvance() {

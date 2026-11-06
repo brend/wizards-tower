@@ -4,6 +4,15 @@
 
 A small canvas game loop with native JavaScript modules. No build step or npm dependencies.
 
+## Wizard voice samples
+
+Generate retro wizard speech with `python3 tools/voice/generate.py` (macOS,
+Python 3.9+, no dependencies). Audition the included samples at
+[assets/audio/wizard/](assets/audio/wizard/index.html) when running the local
+server. Three presets explore toy-computer, cartridge, and deep robot voices.
+See [the voice workshop](tools/voice/README.md) for custom lines, batch generation,
+WAV processing, and tuning.
+
 ## Run locally
 
 From this directory:
@@ -15,6 +24,11 @@ python3 -m http.server 8000 --bind 127.0.0.1
 Open http://127.0.0.1:8000. Use a local server instead of opening index.html as a file, because the browser loads JavaScript modules over HTTP.
 
 You should see a tower, a wizard, an approaching ork, terrain, and a live FPS counter.
+
+Click **Enable sound** to hear the wizard. The click unlocks a shared Web Audio
+context so later game events can play samples. The game stays silent until then;
+the same button mutes sound again. If the first ork has already spawned, enabling
+sound plays the welcome line immediately. Otherwise it plays on the first spawn.
 
 ## How it works
 
