@@ -1,5 +1,4 @@
 import { loadImage } from "./assets.js";
-import { attackTower } from "./events.js";
 
 export class Entity {
   constructor(spritesheet, frameCount = 1) {
@@ -18,6 +17,8 @@ export class Entity {
 
     this.image = null;
     this.ready = false;
+
+    this.afterUpdateBehaviors = [];
 
     loadImage(spritesheet)
       .then((image) => {
@@ -58,7 +59,7 @@ export class Entity {
     );
   }
 
-  update(dt, _emit) {
+  update(dt, emit) {
     this.x += this.vx;
     this.y += this.vy;
     this.frameTime += dt;
@@ -67,43 +68,9 @@ export class Entity {
       this.frameTime -= this.frameDuration;
       this.frame = (this.frame + 1) % this.frameCount;
     }
-  }
-}
 
-export class Ork extends Entity {
-  constructor(spritesheet, frameCount = 1) {
-    super(spritesheet, frameCount);
-    this.attackInterval = 1.0;
-    this.attackStrength = 1.0;
-    this.timeSinceLastAttack = 0.0;
-  }
-
-  update(dt, emit) {
-    super.update(dt);
-
-    if (this.hasArrived()) {
-      if (this.vx) {
-        this.stopAdvance();
-        this.timeSinceLastAttack = 0;
-      }
-
-      this.timeSinceLastAttack += dt;
-      while (this.timeSinceLastAttack >= this.attackInterval) {
-        this.attack(emit);
-        this.timeSinceLastAttack -= this.attackInterval;
-      }
+    for (const action of this.afterUpdateBehaviors) {
+      action(dt, emit, this);
     }
-  }
-
-  hasArrived() {
-    return this.x >= this.targetX;
-  }
-
-  stopAdvance() {
-    this.vx = 0;
-  }
-
-  attack(emit) {
-    emit(attackTower(this.attackStrength));
   }
 }

@@ -1,7 +1,8 @@
 import { generateCanvas } from "./utils/utils.canvas.js";
-import { Entity, Ork } from "./core/entity.js";
+import { Entity } from "./core/entity.js";
 import { LinearAnimation } from "./core/animation.js";
 import { VoicePlayer } from "./core/voice.js";
+import { attackTower } from "./core/events.js";
 
 class Game {
   constructor(width, height, showFps = true) {
@@ -263,11 +264,30 @@ class Game {
   }
 
   spawnOrk(state) {
-    const ork = new Ork("assets/Ork.png", 2);
+    const ork = new Entity("assets/Ork.png", 2);
     ork.x = 200;
     ork.y = 300;
     ork.vx = 0.5;
     ork.targetX = 400 - 24 + 8 * Math.random() - 4;
+    ork.attackInterval = 1;
+    ork.attackStrength = 1;
+    ork.timeSinceLastAttack = 0;
+
+    ork.afterUpdateBehaviors.push((_dt, _emit, entity) => {
+      if (entity.x >= entity.targetX && entity.vx !== 0) {
+        entity.vx = 0;
+        entity.timeSinceLastAttack = 0;
+      }
+    });
+    ork.afterUpdateBehaviors.push((dt, emit, entity) => {
+      if (entity.x >= entity.targetX) {
+        entity.timeSinceLastAttack += dt;
+        while (entity.timeSinceLastAttack >= entity.attackInterval) {
+          emit(attackTower(entity.attackStrength));
+          entity.timeSinceLastAttack -= entity.attackInterval;
+        }
+      }
+    });
     state.entities.push(ork);
 
     if (state.spawnCount === 0) {
