@@ -5,9 +5,8 @@ import { VoicePlayer } from "./core/voice.js";
 import { attackTower } from "./core/events.js";
 
 class Game {
-  constructor(width, height, showFps = true) {
+  constructor(width, height, showFps = true, title = "My Game") {
     this.constants = { width, height, showFps };
-    this.state = { elapsed: 0, entities: {} };
     this.frameId = null;
     this.previousTime = null;
     this.sampleTime = 0;
@@ -18,10 +17,17 @@ class Game {
 
     this.viewport = generateCanvas(width, height);
     this.viewport.id = "gameViewport";
-    this.viewport.setAttribute("aria-label", "Wizard's Tower");
+    this.viewport.setAttribute("aria-label", title);
     this.context = this.viewport.getContext("2d");
     document.getElementById("container").appendChild(this.viewport);
 
+    this.loadVoices();
+    this.initialize();
+    this.start();
+    this.hookupControls();
+  }
+
+  loadVoices() {
     this.voices = new VoicePlayer({
       welcome: "assets/audio/wizard/cartridge/welcome.wav",
       hurt: "assets/audio/wizard/cartridge/hurt.wav",
@@ -30,17 +36,14 @@ class Game {
       hold: "assets/audio/wizard/cartridge/hold.wav",
       itsover: "assets/audio/wizard/cartridge/itsover.wav",
     });
-
-    this.initialize();
-
-    this.start();
-
-    this.hookupControls();
   }
 
   initialize() {
-    const state = this.state;
+    const state = {};
 
+    this.state = state;
+
+    state.elapsed = 0;
     state.entities = [];
     state.projectiles = [];
     state.events = [];
@@ -348,4 +351,4 @@ class Game {
   }
 }
 
-window.game = new Game(800, 600);
+window.game = new Game(800, 600, true, "Wizard's Tower");
