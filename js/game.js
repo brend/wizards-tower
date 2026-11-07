@@ -3,7 +3,6 @@ import { Entity } from "./core/entity.js";
 import { LinearAnimation } from "./core/animation.js";
 import { VoicePlayer } from "./core/voice.js";
 import { attackTower } from "./core/events.js";
-import { CollisionLayer } from "./core/collision.js";
 
 class Game {
   constructor(width, height, showFps = true) {
@@ -42,6 +41,8 @@ class Game {
   initialize() {
     const state = this.state;
 
+    state.entities = [];
+    state.projectiles = [];
     state.events = [];
     state.animations = [];
     state.spawnTimer = 3.0;
@@ -58,7 +59,7 @@ class Game {
     wizard.x = tower.x + 8;
     wizard.y = tower.y + 8;
 
-    state.entities = [wizard, tower];
+    state.entities.push(wizard, tower);
     state.wizard = wizard;
     state.tower = tower;
 
@@ -182,18 +183,11 @@ class Game {
     }
 
     // check for collisions
-    let layer = 1;
-    while (layer <= CollisionLayer.MAX) {
-      for (const a of state.entities) {
-        if (!a.collisionMask) continue;
-        for (const b of state.entities) {
-          if (!(a.collisionMask & b.collisionLayer)) continue;
-          if (!a.intersectsWith(b)) continue;
-          console.log(a, "collided with", b);
-        }
+    for (const a of state.projectiles) {
+      for (const b of state.entities) {
+        if (!a.intersectsWith(b)) continue;
+        b.hp -= a.strength;
       }
-
-      layer <<= 1;
     }
 
     // process events, e.g. attacks
@@ -243,9 +237,15 @@ class Game {
     context.scale(zoom, zoom);
     context.translate(-width / 2, -height / 2);
 
-    for (const entity of Object.values(this.state.entities)) {
+    for (const entity of this.state.entities) {
       context.save();
       entity.render(context);
+      context.restore();
+    }
+
+    for (const projectile of this.state.projectiles) {
+      context.save();
+      projectile.render(context);
       context.restore();
     }
 
@@ -262,6 +262,12 @@ class Game {
 
   removeEntity(entity) {
     this.state.entities = this.state.entities.filter((e) => e !== entity);
+  }
+
+  removeProjectile(projectile) {
+    this.state.projectiles = this.state.projectiles.filter(
+      (p) => p !== projectile,
+    );
   }
 
   addAnimation(animation) {
@@ -294,7 +300,8 @@ class Game {
     ork.attackInterval = 1;
     ork.attackStrength = 1;
     ork.timeSinceLastAttack = 0;
-    ork.collisionLayer = CollisionLayer.ENEMY;
+    ork.hp = 10;
+    ork.maxHp = 10;
 
     ork.afterUpdateBehaviors.push((_dt, _emit, entity) => {
       if (entity.x >= entity.targetX && entity.vx !== 0) {
@@ -326,12 +333,11 @@ class Game {
     fireball.y = 200;
     fireball.w = 8;
     fireball.h = 8;
-    fireball.collisionLayer = CollisionLayer.PROJECTILE;
-    fireball.collisionMask = CollisionLayer.ENEMY;
-    state.entities.push(fireball);
+    fireball.strength = 1;
+    state.projectiles.push(fireball);
     this.playVoice("spell");
     const animation = new LinearAnimation(fireball, -100, 108, 1.0);
-    animation.onComplete = () => this.removeEntity(fireball);
+    animation.onComplete = () => this.removeProjectile(fireball);
     this.addAnimation(animation);
   }
 
