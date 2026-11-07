@@ -3,6 +3,7 @@ import { Entity } from "./core/entity.js";
 import { LinearAnimation } from "./core/animation.js";
 import { VoicePlayer } from "./core/voice.js";
 import { attackTower } from "./core/events.js";
+import { CollisionLayer } from "./core/collision.js";
 
 class Game {
   constructor(width, height, showFps = true) {
@@ -161,27 +162,47 @@ class Game {
 
     const originalTowerY = state.tower.y;
 
+    // spawn orcs
     state.spawnTimer -= dt;
     while (state.spawnTimer <= 0) {
       this.spawnOrk(state);
       state.spawnTimer += 3.0;
     }
 
+    // spawn fireballs
     state.spellSpawnTimer -= dt;
     while (state.spellSpawnTimer <= 0) {
       this.spawnFireball(state);
       state.spellSpawnTimer += 5.0;
     }
 
+    // update entities
     for (const entity of Object.values(state.entities)) {
       entity.update(dt, (event) => this.emitEvent(event));
     }
 
+    // check for collisions
+    let layer = 1;
+    while (layer <= CollisionLayer.MAX) {
+      for (const a of state.entities) {
+        if (!a.collisionMask) continue;
+        for (const b of state.entities) {
+          if (!(a.collisionMask & b.collisionLayer)) continue;
+          if (!a.intersectsWith(b)) continue;
+          console.log(a, "collided with", b);
+        }
+      }
+
+      layer <<= 1;
+    }
+
+    // process events, e.g. attacks
     while (state.events.length > 0) {
       const e = state.events.shift();
       this.processEvent(e);
     }
 
+    // update animations
     const completed = [];
     for (const animation of this.state.animations) {
       animation.update(dt);
@@ -194,6 +215,7 @@ class Game {
       animation.onComplete?.();
     }
 
+    // play a sound when the tower falls
     if (originalTowerY < 300 && state.tower.y >= 300) {
       this.playVoice("itsover");
     }
@@ -272,6 +294,7 @@ class Game {
     ork.attackInterval = 1;
     ork.attackStrength = 1;
     ork.timeSinceLastAttack = 0;
+    ork.collisionLayer = CollisionLayer.ENEMY;
 
     ork.afterUpdateBehaviors.push((_dt, _emit, entity) => {
       if (entity.x >= entity.targetX && entity.vx !== 0) {
@@ -301,6 +324,10 @@ class Game {
     const fireball = new Entity("assets/Fireball.png");
     fireball.x = 400;
     fireball.y = 200;
+    fireball.w = 8;
+    fireball.h = 8;
+    fireball.collisionLayer = CollisionLayer.PROJECTILE;
+    fireball.collisionMask = CollisionLayer.ENEMY;
     state.entities.push(fireball);
     this.playVoice("spell");
     const animation = new LinearAnimation(fireball, -100, 108, 1.0);

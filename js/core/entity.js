@@ -7,6 +7,8 @@ export class Entity {
     this.frameCount = frameCount;
     this.x = 0;
     this.y = 0;
+    this.w = 16;
+    this.h = 16;
     this.vx = 0;
     this.vy = 0;
     this.ready = false;
@@ -19,6 +21,9 @@ export class Entity {
     this.ready = false;
 
     this.afterUpdateBehaviors = [];
+
+    this.collisionLayer = 0;
+    this.collisionMask = 0;
 
     loadImage(spritesheet)
       .then((image) => {
@@ -72,5 +77,14 @@ export class Entity {
     for (const action of this.afterUpdateBehaviors) {
       action(dt, emit, this);
     }
+  }
+
+  intersectsWith(other) {
+    return !(
+      other.x > this.x + this.w ||
+      other.x + other.w < this.x ||
+      other.y > this.y + this.h ||
+      other.y + other.h < this.y
+    );
   }
 }
