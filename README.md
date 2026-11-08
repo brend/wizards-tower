@@ -25,6 +25,11 @@ Open http://127.0.0.1:8000. Use a local server instead of opening index.html as 
 
 You should see a tower, a wizard, an approaching ork, terrain, and a live FPS counter.
 
+The `new Game(320, 180, true, "Wizard's Tower", 5)` call at the bottom of
+`js/game.js` sets the logical scene size and display zoom. A zoom of 5 displays
+the entire 320×180 scene at up to 1600×900 pixels, shrinking to fit the browser.
+Changing zoom changes the display size without cropping the scene.
+
 Click **Enable sound** to hear the wizard. The click unlocks a shared Web Audio
 context so later game events can play samples. The game stays silent until then;
 the same button mutes sound again. If the first ork has already spawned, enabling

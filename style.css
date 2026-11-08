@@ -1,14 +1,20 @@
 #container {
   position: relative;
+  display: grid;
+  width: fit-content;
+  max-width: min(100%, calc((100dvh - 64px) * var(--scene-aspect)));
+}
+
+canvas {
+  grid-row: 1;
+  min-width: 0;
+  image-rendering: pixelated;
 }
 
 .controls {
-  position: absolute;
-  top: 400px;
-  left: 16px;
-  z-index: 1;
-
+  grid-row: 2;
   display: flex;
+  flex-wrap: wrap;
   gap: 8px;
 }
 
@@ -24,4 +30,10 @@ button {
   font-size: 16px;
   margin: 4px 2px;
   cursor: pointer;
+}
+
+.game {
+  cursor:
+    url("/assets/Cursor.png") 4 4,
+    auto;
 }

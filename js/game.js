@@ -5,8 +5,8 @@ import { VoicePlayer } from "./core/voice.js";
 import { attackTower } from "./core/events.js";
 
 class Game {
-  constructor(width, height, showFps = true, title = "My Game") {
-    this.constants = { width, height, showFps };
+  constructor(width, height, showFps = true, title = "My Game", zoom = 1) {
+    this.constants = { width, height, showFps, zoom };
     this.frameId = null;
     this.previousTime = null;
     this.sampleTime = 0;
@@ -15,11 +15,13 @@ class Game {
     // Keep the Game instance as `this` when the browser invokes the callback.
     this.frame = this.frame.bind(this);
 
-    this.viewport = generateCanvas(width, height);
+    this.viewport = generateCanvas(width, height, zoom);
     this.viewport.id = "gameViewport";
     this.viewport.setAttribute("aria-label", title);
     this.context = this.viewport.getContext("2d");
-    document.getElementById("container").appendChild(this.viewport);
+    const container = document.getElementById("container");
+    container.style.setProperty("--scene-aspect", width / height);
+    container.appendChild(this.viewport);
 
     this.loadVoices();
     this.initialize();
@@ -39,13 +41,15 @@ class Game {
   }
 
   initialize() {
+    const { width, height } = this.constants;
     const state = {};
 
     this.state = state;
 
     state.elapsed = 0;
-    state.entities = [];
+    state.enemies = [];
     state.projectiles = [];
+    state.background = [];
     state.events = [];
     state.animations = [];
     state.spawnTimer = 3.0;
@@ -55,30 +59,36 @@ class Game {
     const tower = new Entity("assets/Tower.png");
     const wizard = new Entity("assets/Wizard.png", 4);
 
-    tower.x = (800 - 32) /*tower.width*/ / 2;
-    tower.y = (600 - 128) /*tower.height*/ / 2;
+    tower.x = (width - 32) / 2;
+    tower.y = (height - 128) / 2;
     tower.hp = 10;
 
     wizard.x = tower.x + 8;
     wizard.y = tower.y + 8;
+    // Wizard's hp prevent him from being de-spawned :P
+    wizard.hp = 1;
 
-    state.entities.push(wizard, tower);
+    state.background.push(wizard, tower);
     state.wizard = wizard;
     state.tower = tower;
+    // The tower sprite includes roots and transparent padding below ground.
+    state.groundY = tower.y + 78;
 
-    for (let i = 0; i < 80; ++i) {
+    for (let i = 0; i < Math.ceil(width / 16); ++i) {
       const grass = new Entity("assets/Ground-1.png");
-      grass.x = 200 + 16 * i;
-      grass.y = 314;
-      state.entities.push(grass);
+      grass.x = 16 * i;
+      grass.y = state.groundY;
+      grass.hp = 1;
+      state.background.push(grass);
     }
 
-    for (let j = 0; j < 10; ++j) {
-      for (let i = 0; i < 80; ++i) {
+    for (let y = state.groundY + 16; y < height; y += 16) {
+      for (let i = 0; i < Math.ceil(width / 16); ++i) {
         const soil = new Entity("assets/Ground-2.png");
-        soil.x = 200 + 16 * i;
-        soil.y = 314 + 16 * (j + 1);
-        state.entities.push(soil);
+        soil.x = 16 * i;
+        soil.y = y;
+        soil.hp = 1;
+        state.background.push(soil);
       }
     }
   }
@@ -117,6 +127,18 @@ class Game {
         soundButton.disabled = false;
         this.voices.onStateChange();
       }
+    });
+
+    this.viewport.addEventListener("click", (event) => {
+      if (this.frameId === null) return; // Ignore clicks while paused.
+
+      const rect = this.viewport.getBoundingClientRect();
+      const x =
+        ((event.clientX - rect.left) * this.constants.width) / rect.width;
+      const y =
+        ((event.clientY - rect.top) * this.constants.height) / rect.height;
+
+      this.spawnFireball(this.state, x, y);
     });
   }
 
@@ -175,23 +197,33 @@ class Game {
 
     // spawn fireballs
     state.spellSpawnTimer -= dt;
-    while (state.spellSpawnTimer <= 0) {
-      this.spawnFireball(state);
-      state.spellSpawnTimer += 5.0;
-    }
+    // while (state.spellSpawnTimer <= 0) {
+    //   this.spawnFireball(state);
+    //   state.spellSpawnTimer += 5.0;
+    // }
 
     // update entities
-    for (const entity of Object.values(state.entities)) {
-      entity.update(dt, (event) => this.emitEvent(event));
+    for (const enemy of state.enemies) {
+      enemy.update(dt, (event) => this.emitEvent(event));
+    }
+
+    for (const projectile of state.projectiles) {
+      projectile.update(dt, (event) => this.emitEvent(event));
+    }
+
+    for (const object of state.background) {
+      object.update(dt, (event) => this.emitEvent(event));
     }
 
     // check for collisions
     for (const a of state.projectiles) {
-      for (const b of state.entities) {
+      for (const b of state.enemies) {
         if (!a.intersectsWith(b)) continue;
         b.hp -= a.strength;
       }
     }
+
+    state.enemies = state.enemies.filter((e) => e.hp > 0);
 
     // process events, e.g. attacks
     while (state.events.length > 0) {
@@ -213,7 +245,8 @@ class Game {
     }
 
     // play a sound when the tower falls
-    if (originalTowerY < 300 && state.tower.y >= 300) {
+    const fallenY = state.groundY - 14;
+    if (originalTowerY < fallenY && state.tower.y >= fallenY) {
       this.playVoice("itsover");
     }
   }
@@ -226,21 +259,14 @@ class Game {
     context.fillRect(0, 0, width, height);
 
     if (showFps) {
-      context.font = "16px monospace";
+      context.font = "6px monospace";
       context.fillStyle = "#facc15";
-      context.fillText(`${this.fps} FPS`, width - 100, 45);
+      context.fillText(`${this.fps} FPS`, width - 32, 10);
     }
-
-    const zoom = 3;
 
     context.save();
 
-    // Zoom around the center of the scene.
-    context.translate(width / 2, height / 2);
-    context.scale(zoom, zoom);
-    context.translate(-width / 2, -height / 2);
-
-    for (const entity of this.state.entities) {
+    for (const entity of this.state.enemies) {
       context.save();
       entity.render(context);
       context.restore();
@@ -252,6 +278,12 @@ class Game {
       context.restore();
     }
 
+    for (const background of this.state.background) {
+      context.save();
+      background.render(context);
+      context.restore();
+    }
+
     context.restore();
   }
 
@@ -259,18 +291,14 @@ class Game {
     this.state.events.push(e);
   }
 
-  addEntity(entity) {
-    this.state.entities.push(entity);
-  }
-
-  removeEntity(entity) {
-    this.state.entities = this.state.entities.filter((e) => e !== entity);
-  }
-
   removeProjectile(projectile) {
     this.state.projectiles = this.state.projectiles.filter(
       (p) => p !== projectile,
     );
+  }
+
+  removeEnemy(entity) {
+    this.state.enemies = this.state.enemies.filter((e) => e !== entity);
   }
 
   addAnimation(animation) {
@@ -285,21 +313,21 @@ class Game {
         this.state.wizard.y += e.strength * 8;
 
         const effect = new Entity("assets/Ouch.png");
-        effect.x = 400 - 20;
-        effect.y = 284;
-        this.addEntity(effect);
+        effect.x = this.state.tower.x - 4;
+        effect.y = this.state.groundY - 30;
+        this.state.background.push(effect);
         const animation = new LinearAnimation(effect, -8, -64, 2.0);
-        animation.onComplete = () => this.removeEntity(effect);
+        animation.onComplete = () => this.removeEnemy(effect);
         this.addAnimation(animation);
     }
   }
 
   spawnOrk(state) {
     const ork = new Entity("assets/Ork.png", 2);
-    ork.x = 200;
-    ork.y = 300;
+    ork.x = 0;
+    ork.y = state.groundY - 14;
     ork.vx = 0.5;
-    ork.targetX = 400 - 24 + 8 * Math.random() - 4;
+    ork.targetX = state.tower.x - 8 + 8 * Math.random() - 4;
     ork.attackInterval = 1;
     ork.attackStrength = 1;
     ork.timeSinceLastAttack = 0;
@@ -321,7 +349,7 @@ class Game {
         }
       }
     });
-    state.entities.push(ork);
+    state.enemies.push(ork);
 
     if (state.spawnCount === 0) {
       this.playVoice("hold");
@@ -330,16 +358,20 @@ class Game {
     state.spawnCount += 1;
   }
 
-  spawnFireball(state) {
+  spawnFireball(state, destX, destY) {
     const fireball = new Entity("assets/Fireball.png");
-    fireball.x = 400;
-    fireball.y = 200;
+    fireball.x = state.wizard.x + 8;
+    fireball.y = state.wizard.y;
     fireball.w = 8;
     fireball.h = 8;
+    const dx = destX - fireball.x - fireball.w / 2;
+    const dy = destY - fireball.y - fireball.h / 2;
+    const len = dx * dx + dy * dy;
+    fireball.vx = 200 * (dx / len);
+    fireball.vy = 200 * (dy / len);
     fireball.strength = 1;
     state.projectiles.push(fireball);
     this.playVoice("spell");
-    const animation = new LinearAnimation(fireball, -100, 108, 1.0);
     animation.onComplete = () => this.removeProjectile(fireball);
     this.addAnimation(animation);
   }
@@ -351,4 +383,4 @@ class Game {
   }
 }
 
-window.game = new Game(800, 600, true, "Wizard's Tower");
+window.game = new Game(320, 180, true, "Wizard's Tower", 5);
