@@ -47,11 +47,11 @@ class Game {
     this.state = state;
 
     state.elapsed = 0;
-    state.enemies = [];
-    state.projectiles = [];
-    state.background = [];
-    state.events = [];
-    state.animations = [];
+    state.enemies = new Set();
+    state.projectiles = new Set();
+    state.background = new Set();
+    state.events = new Set();
+    state.animations = new Set();
     state.spawnTimer = 3.0;
     state.spellSpawnTimer = 5.0;
     state.spawnCount = 0;
@@ -68,18 +68,20 @@ class Game {
     // Wizard's hp prevent him from being de-spawned :P
     wizard.hp = 1;
 
-    state.background.push(wizard, tower);
+    state.background.add(wizard, tower);
     state.wizard = wizard;
     state.tower = tower;
     // The tower sprite includes roots and transparent padding below ground.
     state.groundY = tower.y + 78;
+
+    state.background.add(tower);
 
     for (let i = 0; i < Math.ceil(width / 16); ++i) {
       const grass = new Entity("assets/Ground-1.png");
       grass.x = 16 * i;
       grass.y = state.groundY;
       grass.hp = 1;
-      state.background.push(grass);
+      state.background.add(grass);
     }
 
     for (let y = state.groundY + 16; y < height; y += 16) {
@@ -88,7 +90,7 @@ class Game {
         soil.x = 16 * i;
         soil.y = y;
         soil.hp = 1;
-        state.background.push(soil);
+        state.background.add(soil);
       }
     }
   }
@@ -197,10 +199,6 @@ class Game {
 
     // spawn fireballs
     state.spellSpawnTimer -= dt;
-    // while (state.spellSpawnTimer <= 0) {
-    //   this.spawnFireball(state);
-    //   state.spellSpawnTimer += 5.0;
-    // }
 
     // update entities
     for (const enemy of state.enemies) {
@@ -223,7 +221,11 @@ class Game {
       }
     }
 
-    state.enemies = state.enemies.filter((e) => e.hp > 0);
+    for (const enemy of state.enemies) {
+      if (enemy.hp <= 0) {
+        state.enemies.delete(enemy);
+      }
+    }
 
     // process events, e.g. attacks
     while (state.events.length > 0) {
@@ -236,10 +238,14 @@ class Game {
     for (const animation of this.state.animations) {
       animation.update(dt);
       if (animation.done) {
-        completed.push(animation);
+        completed.add(animation);
       }
     }
-    state.animations = state.animations.filter((a) => !a.done);
+    for (const animation of this.state.animations) {
+      if (animation.done) {
+        state.delete(animation);
+      }
+    }
     for (const animation of completed) {
       animation.onComplete?.();
     }
@@ -288,21 +294,11 @@ class Game {
   }
 
   emitEvent(e) {
-    this.state.events.push(e);
-  }
-
-  removeProjectile(projectile) {
-    this.state.projectiles = this.state.projectiles.filter(
-      (p) => p !== projectile,
-    );
-  }
-
-  removeEnemy(entity) {
-    this.state.enemies = this.state.enemies.filter((e) => e !== entity);
+    this.state.events.add(e);
   }
 
   addAnimation(animation) {
-    this.state.animations.push(animation);
+    this.state.animations.add(animation);
   }
 
   processEvent(e) {
@@ -315,9 +311,9 @@ class Game {
         const effect = new Entity("assets/Ouch.png");
         effect.x = this.state.tower.x - 4;
         effect.y = this.state.groundY - 30;
-        this.state.background.push(effect);
+        this.state.background.add(effect);
         const animation = new LinearAnimation(effect, -8, -64, 2.0);
-        animation.onComplete = () => this.removeEnemy(effect);
+        animation.onComplete = () => this.state.background.delete(effect);
         this.addAnimation(animation);
     }
   }
@@ -349,7 +345,7 @@ class Game {
         }
       }
     });
-    state.enemies.push(ork);
+    state.enemies.add(ork);
 
     if (state.spawnCount === 0) {
       this.playVoice("hold");
@@ -370,10 +366,8 @@ class Game {
     fireball.vx = 200 * (dx / len);
     fireball.vy = 200 * (dy / len);
     fireball.strength = 1;
-    state.projectiles.push(fireball);
+    state.projectiles.add(fireball);
     this.playVoice("spell");
-    animation.onComplete = () => this.removeProjectile(fireball);
-    this.addAnimation(animation);
   }
 
   playVoice(name) {
