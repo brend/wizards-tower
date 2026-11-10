@@ -23,17 +23,19 @@ python3 -m http.server 8000 --bind 127.0.0.1
 
 Open http://127.0.0.1:8000. Use a local server instead of opening index.html as a file, because the browser loads JavaScript modules over HTTP.
 
-You should see a tower, a wizard, an approaching ork, terrain, and a live FPS counter.
+Click **Start game** to begin with sound enabled. Until then, the game waits on
+the start screen without advancing timers or spawning enemies. Once started,
+you should see a tower, a wizard, an approaching ork, terrain, and a live FPS counter.
 
 The `new Game(320, 180, true, "Wizard's Tower", 5)` call at the bottom of
 `js/game.js` sets the logical scene size and display zoom. A zoom of 5 displays
 the entire 320×180 scene at up to 1600×900 pixels, shrinking to fit the browser.
 Changing zoom changes the display size without cropping the scene.
 
-Click **Enable sound** to hear the wizard. The click unlocks a shared Web Audio
-context so later game events can play samples. The game stays silent until then;
-the same button mutes sound again. If the first ork has already spawned, enabling
-sound plays the welcome line immediately. Otherwise it plays on the first spawn.
+The **Start game** click unlocks a shared Web Audio context and plays the wizard's
+welcome line so later game events can play samples. Use **Mute sound** to mute,
+then **Enable sound** to turn it back on. If audio cannot be enabled, the game
+still starts and **Enable sound** lets you retry.
 
 ## How it works
 

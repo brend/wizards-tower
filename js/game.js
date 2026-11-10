@@ -26,7 +26,6 @@ class Game {
 
     this.loadVoices();
     this.initialize();
-    this.start();
     this.hookupControls();
   }
 
@@ -47,7 +46,7 @@ class Game {
 
     this.state = state;
 
-    state.phase = "playing";
+    state.phase = "ready";
     state.elapsed = 0;
     state.enemies = new Set();
     state.projectiles = new Set();
@@ -104,6 +103,29 @@ class Game {
   }
 
   hookupControls() {
+    const startButton = document.getElementById("start-button");
+    startButton.addEventListener("click", async () => {
+      if (this.state.phase !== "ready" || startButton.disabled) return;
+      startButton.disabled = true;
+      startButton.textContent = "Starting…";
+      try {
+        // Unlock audio directly in the user gesture, before any other await.
+        if (await this.voices.enable()) this.playVoice("welcome");
+      } catch (error) {
+        console.warn("Could not enable game sound:", error);
+      } finally {
+        // Audio failure should still allow play; the sound button can retry.
+        document.getElementById("start-screen").hidden = true;
+        this.state.phase = "paused";
+        this.start();
+        document.getElementById("pause-button").disabled = false;
+        document.getElementById("resume-button").disabled = false;
+        soundButton.disabled = false;
+        this.voices.onStateChange();
+        document.getElementById("pause-button").focus();
+      }
+    });
+
     document.getElementById("pause-button").addEventListener("click", () => {
       this.stop();
     });
@@ -158,7 +180,7 @@ class Game {
   }
 
   start() {
-    if (this.frameId !== null) return;
+    if (this.state.phase === "ready" || this.frameId !== null) return;
     this.previousTime = null;
     this.sampleTime = 0;
     this.sampleFrames = 0;
@@ -168,6 +190,7 @@ class Game {
   }
 
   stop() {
+    if (this.state.phase === "ready") return;
     window.cancelAnimationFrame(this.frameId);
     this.frameId = null;
     this.previousTime = null;
