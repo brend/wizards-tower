@@ -41,6 +41,7 @@ export class Entity {
   }
 
   render(context) {
+    if (!context) throw new Error("argument 'context' is required");
     if (!this.ready) return;
     const frameWidth = this.image.width / this.frameCount;
     const frameHeight = this.image.height;

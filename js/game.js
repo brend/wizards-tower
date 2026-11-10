@@ -47,6 +47,7 @@ class Game {
 
     this.state = state;
 
+    state.phase = "playing";
     state.elapsed = 0;
     state.enemies = new Set();
     state.projectiles = new Set();
@@ -60,6 +61,8 @@ class Game {
     state.hudFireball = new Entity("assets/Fireball.png");
     state.hudFireball.x = 160 - 6 + 2;
     state.hudFireball.y = 120 + 2;
+
+    state.hudGameOver = new Entity("assets/Itisover.png");
 
     const tower = new Entity("assets/Tower.png");
     const wizard = new Entity("assets/Wizard.png", 4);
@@ -161,12 +164,14 @@ class Game {
     this.sampleFrames = 0;
     this.fps = 0;
     this.frameId = window.requestAnimationFrame(this.frame);
+    this.state.phase = "playing";
   }
 
   stop() {
     window.cancelAnimationFrame(this.frameId);
     this.frameId = null;
     this.previousTime = null;
+    this.state.phase = "paused";
   }
 
   // Render at the display's refresh rate; update receives elapsed seconds.
@@ -264,6 +269,7 @@ class Game {
     const fallenY = state.groundY - 14;
     if (originalTowerY < fallenY && state.tower.y >= fallenY) {
       this.playVoice("itsover");
+      this.state.phase = "gameover";
     }
   }
 
@@ -282,6 +288,12 @@ class Game {
 
     context.save();
 
+    for (const background of this.state.background) {
+      context.save();
+      background.render(context);
+      context.restore();
+    }
+
     for (const entity of this.state.enemies) {
       context.save();
       entity.render(context);
@@ -291,12 +303,6 @@ class Game {
     for (const projectile of this.state.projectiles) {
       context.save();
       projectile.render(context);
-      context.restore();
-    }
-
-    for (const background of this.state.background) {
-      context.save();
-      background.render(context);
       context.restore();
     }
 
@@ -312,46 +318,50 @@ class Game {
     const remaining = Math.min(1, Math.max(0, fireballTimer.remainingFraction));
     if (remaining === 0) {
       hudFireball.render(context);
-      return;
+    } else {
+      this.state.hudFireballGray ??= createGrayscaleImage(hudFireball.image);
+      const width = hudFireball.width / hudFireball.frameCount;
+      const height = hudFireball.height;
+      const centerX = hudFireball.x + width / 2;
+      const centerY = hudFireball.y + height / 2;
+      // Extend the sector past the corners of the rectangular sprite.
+      const radius = Math.hypot(width, height) / 2 + 1;
+      const startAngle = -Math.PI / 2;
+      const endAngle = startAngle + Math.PI * 2;
+      const sweepAngle = startAngle + Math.PI * 2 * (1 - remaining);
+
+      const drawSector = (image, from, to) => {
+        context.save();
+        context.beginPath();
+        context.moveTo(centerX, centerY);
+        context.arc(centerX, centerY, radius, from, to);
+        context.closePath();
+        context.clip();
+        context.drawImage(
+          image,
+          hudFireball.frame * width,
+          0,
+          width,
+          height,
+          hudFireball.x,
+          hudFireball.y,
+          width,
+          height,
+        );
+        context.restore();
+      };
+
+      // Reveal color clockwise from twelve o'clock as the cooldown expires.
+      if (remaining < 1) {
+        drawSector(hudFireball.image, startAngle, sweepAngle);
+      }
+      drawSector(this.state.hudFireballGray, sweepAngle, endAngle);
     }
 
-    this.state.hudFireballGray ??= createGrayscaleImage(hudFireball.image);
-    const width = hudFireball.width / hudFireball.frameCount;
-    const height = hudFireball.height;
-    const centerX = hudFireball.x + width / 2;
-    const centerY = hudFireball.y + height / 2;
-    // Extend the sector past the corners of the rectangular sprite.
-    const radius = Math.hypot(width, height) / 2 + 1;
-    const startAngle = -Math.PI / 2;
-    const endAngle = startAngle + Math.PI * 2;
-    const sweepAngle = startAngle + Math.PI * 2 * (1 - remaining);
-
-    const drawSector = (image, from, to) => {
-      context.save();
-      context.beginPath();
-      context.moveTo(centerX, centerY);
-      context.arc(centerX, centerY, radius, from, to);
-      context.closePath();
-      context.clip();
-      context.drawImage(
-        image,
-        hudFireball.frame * width,
-        0,
-        width,
-        height,
-        hudFireball.x,
-        hudFireball.y,
-        width,
-        height,
-      );
-      context.restore();
-    };
-
-    // Reveal color clockwise from twelve o'clock as the cooldown expires.
-    if (remaining < 1) {
-      drawSector(hudFireball.image, startAngle, sweepAngle);
+    // Render game over message
+    if (this.state.phase === "gameover" && this.state.hudGameOver.ready) {
+      this.state.hudGameOver.render(context);
     }
-    drawSector(this.state.hudFireballGray, sweepAngle, endAngle);
   }
 
   addAnimation(animation) {
