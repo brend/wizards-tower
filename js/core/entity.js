@@ -71,7 +71,7 @@ export class Entity {
     }
   }
 
-  update(dt, emit) {
+  update(dt) {
     this.x += this.vx;
     this.y += this.vy;
     this.frameTime += dt;
@@ -82,7 +82,7 @@ export class Entity {
     }
 
     for (const action of this.afterUpdateBehaviors) {
-      action(dt, emit, this);
+      action(dt, this);
     }
   }
 

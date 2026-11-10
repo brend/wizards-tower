@@ -50,7 +50,7 @@ class Game {
     state.enemies = new Set();
     state.projectiles = new Set();
     state.background = new Set();
-    state.events = new Set();
+    state.events = [];
     state.animations = new Set();
     state.spawnTimer = 3.0;
     state.spellSpawnTimer = 5.0;
@@ -202,15 +202,15 @@ class Game {
 
     // update entities
     for (const enemy of state.enemies) {
-      enemy.update(dt, (event) => this.emitEvent(event));
+      enemy.update(dt);
     }
 
     for (const projectile of state.projectiles) {
-      projectile.update(dt, (event) => this.emitEvent(event));
+      projectile.update(dt);
     }
 
     for (const object of state.background) {
-      object.update(dt, (event) => this.emitEvent(event));
+      object.update(dt);
     }
 
     // check for collisions
@@ -238,12 +238,12 @@ class Game {
     for (const animation of this.state.animations) {
       animation.update(dt);
       if (animation.done) {
-        completed.add(animation);
+        completed.push(animation);
       }
     }
     for (const animation of this.state.animations) {
       if (animation.done) {
-        state.delete(animation);
+        this.state.animations.delete(animation);
       }
     }
     for (const animation of completed) {
@@ -293,10 +293,6 @@ class Game {
     context.restore();
   }
 
-  emitEvent(e) {
-    this.state.events.add(e);
-  }
-
   addAnimation(animation) {
     this.state.animations.add(animation);
   }
@@ -311,6 +307,7 @@ class Game {
         const effect = new Entity("assets/Ouch.png");
         effect.x = this.state.tower.x - 4;
         effect.y = this.state.groundY - 30;
+        effect.vx = Math.random() * 0.4 - 0.2;
         this.state.background.add(effect);
         const animation = new LinearAnimation(effect, -8, -64, 2.0);
         animation.onComplete = () => this.state.background.delete(effect);
@@ -330,17 +327,17 @@ class Game {
     ork.hp = 10;
     ork.maxHp = 10;
 
-    ork.afterUpdateBehaviors.push((_dt, _emit, entity) => {
+    ork.afterUpdateBehaviors.push((_dt, entity) => {
       if (entity.x >= entity.targetX && entity.vx !== 0) {
         entity.vx = 0;
         entity.timeSinceLastAttack = 0;
       }
     });
-    ork.afterUpdateBehaviors.push((dt, emit, entity) => {
+    ork.afterUpdateBehaviors.push((dt, entity) => {
       if (entity.x >= entity.targetX) {
         entity.timeSinceLastAttack += dt;
         while (entity.timeSinceLastAttack >= entity.attackInterval) {
-          emit(attackTower(entity.attackStrength));
+          state.events.push(attackTower(entity.attackStrength));
           entity.timeSinceLastAttack -= entity.attackInterval;
         }
       }
