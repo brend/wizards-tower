@@ -2,6 +2,25 @@ export function getPixelRatio() {
   return window.devicePixelRatio || 1;
 }
 
+// Convert once, then reuse the canvas without relying on Canvas 2D filters.
+export function createGrayscaleImage(image) {
+  const canvas = document.createElement("canvas");
+  canvas.width = image.width;
+  canvas.height = image.height;
+  const context = canvas.getContext("2d");
+  context.drawImage(image, 0, 0);
+
+  const pixels = context.getImageData(0, 0, canvas.width, canvas.height);
+  const data = pixels.data;
+  for (let i = 0; i < data.length; i += 4) {
+    const gray = (0.2126 * data[i] + 0.7152 * data[i + 1] + 0.0722 * data[i + 2]) * 0.6;
+    data[i] = data[i + 1] = data[i + 2] = gray;
+    // Preserve alpha so the sprite's transparent pixels stay transparent.
+  }
+  context.putImageData(pixels, 0, 0);
+  return canvas;
+}
+
 export function generateCanvas(width, height, zoom = 1) {
   const canvas = document.createElement("canvas");
   const context = canvas.getContext("2d");

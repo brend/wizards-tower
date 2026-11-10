@@ -1,8 +1,9 @@
-import { generateCanvas } from "./utils/utils.canvas.js";
+import { createGrayscaleImage, generateCanvas } from "./utils/utils.canvas.js";
 import { Entity } from "./core/entity.js";
 import { LinearAnimation } from "./core/animation.js";
 import { VoicePlayer } from "./core/voice.js";
 import { attackTower } from "./core/events.js";
+import { Timer } from "./core/timer.js";
 
 class Game {
   constructor(width, height, showFps = true, title = "My Game", zoom = 1) {
@@ -53,8 +54,12 @@ class Game {
     state.events = [];
     state.animations = new Set();
     state.spawnTimer = 3.0;
-    state.spellSpawnTimer = 5.0;
     state.spawnCount = 0;
+    state.fireballTimer = new Timer(5);
+
+    state.hudFireball = new Entity("assets/Fireball.png");
+    state.hudFireball.x = 160 - 6 + 2;
+    state.hudFireball.y = 120 + 2;
 
     const tower = new Entity("assets/Tower.png");
     const wizard = new Entity("assets/Wizard.png", 4);
@@ -134,6 +139,10 @@ class Game {
     this.viewport.addEventListener("click", (event) => {
       if (this.frameId === null) return; // Ignore clicks while paused.
 
+      if (!this.state.fireballTimer.isOver) {
+        return;
+      }
+
       const rect = this.viewport.getBoundingClientRect();
       const x =
         ((event.clientX - rect.left) * this.constants.width) / rect.width;
@@ -141,6 +150,7 @@ class Game {
         ((event.clientY - rect.top) * this.constants.height) / rect.height;
 
       this.spawnFireball(this.state, x, y);
+      this.state.fireballTimer.reset();
     });
   }
 
@@ -190,15 +200,15 @@ class Game {
 
     const originalTowerY = state.tower.y;
 
+    // update timers
+    state.fireballTimer.advance(dt);
+
     // spawn orcs
     state.spawnTimer -= dt;
     while (state.spawnTimer <= 0) {
       this.spawnOrk(state);
       state.spawnTimer += 3.0;
     }
-
-    // spawn fireballs
-    state.spellSpawnTimer -= dt;
 
     // update entities
     for (const enemy of state.enemies) {
@@ -290,7 +300,58 @@ class Game {
       context.restore();
     }
 
+    this.renderHud(context);
+
     context.restore();
+  }
+
+  renderHud(context) {
+    const { hudFireball, fireballTimer } = this.state;
+    if (!hudFireball.ready) return;
+
+    const remaining = Math.min(1, Math.max(0, fireballTimer.remainingFraction));
+    if (remaining === 0) {
+      hudFireball.render(context);
+      return;
+    }
+
+    this.state.hudFireballGray ??= createGrayscaleImage(hudFireball.image);
+    const width = hudFireball.width / hudFireball.frameCount;
+    const height = hudFireball.height;
+    const centerX = hudFireball.x + width / 2;
+    const centerY = hudFireball.y + height / 2;
+    // Extend the sector past the corners of the rectangular sprite.
+    const radius = Math.hypot(width, height) / 2 + 1;
+    const startAngle = -Math.PI / 2;
+    const endAngle = startAngle + Math.PI * 2;
+    const sweepAngle = startAngle + Math.PI * 2 * (1 - remaining);
+
+    const drawSector = (image, from, to) => {
+      context.save();
+      context.beginPath();
+      context.moveTo(centerX, centerY);
+      context.arc(centerX, centerY, radius, from, to);
+      context.closePath();
+      context.clip();
+      context.drawImage(
+        image,
+        hudFireball.frame * width,
+        0,
+        width,
+        height,
+        hudFireball.x,
+        hudFireball.y,
+        width,
+        height,
+      );
+      context.restore();
+    };
+
+    // Reveal color clockwise from twelve o'clock as the cooldown expires.
+    if (remaining < 1) {
+      drawSector(hudFireball.image, startAngle, sweepAngle);
+    }
+    drawSector(this.state.hudFireballGray, sweepAngle, endAngle);
   }
 
   addAnimation(animation) {
